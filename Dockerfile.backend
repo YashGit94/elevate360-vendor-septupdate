@@ -1,0 +1,17 @@
+FROM node:20-alpine
+WORKDIR /app
+
+# Copy package files and install production dependencies
+COPY package*.json ./
+RUN npm install --only=production
+
+# Copy backend source code
+# Note: Ensure src/keys.json exists or is provided via a secret volume
+COPY src/index.js ./src/
+COPY src/keys.json ./src/ 
+
+# The backend runs on port 3001 based on index.js
+EXPOSE 3001
+
+# Start the application
+CMD ["node", "src/index.js"]
