@@ -1,13 +1,16 @@
 steps:
-  # --- 1. Build & Deploy Backend ---
+  # --- 1. BUILD & DEPLOY BACKEND ---
+  # Build the Backend Image using the custom backend.Dockerfile
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-backend'
     args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest', '-f', 'backend.Dockerfile', '.']
 
+  # Push Backend Image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push-backend'
     args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest']
 
+  # Deploy Backend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-backend'
     entrypoint: gcloud
@@ -21,15 +24,18 @@ steps:
       - '$_REGION'
       - '--allow-unauthenticated'
 
-  # --- 2. Build & Deploy Frontend ---
+  # --- 2. BUILD & DEPLOY FRONTEND ---
+  # Build the Frontend Image using the standard Dockerfile
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-frontend'
     args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest', '-f', 'Dockerfile', '.']
 
+  # Push Frontend Image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push-frontend'
     args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest']
 
+  # Deploy Frontend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-frontend'
     entrypoint: gcloud
@@ -43,9 +49,10 @@ steps:
       - '$_REGION'
       - '--allow-unauthenticated'
 
+# Substitutions allow you to customize values without changing the logic
 substitutions:
   _REGION: us-central1
-  _REPO_NAME: my-repository # Replace with your actual registry name
+  _REPO_NAME: my-repository # Ensure this matches the Artifact Registry repo you created
 
 options:
   logging: CLOUD_LOGGING_ONLY
