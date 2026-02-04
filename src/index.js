@@ -1,39 +1,45 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const path = require('path');
 const { BigQuery } = require('@google-cloud/bigquery');
 
 const app = express();
-// Cloud Run injects the PORT. We must use it or default to 8080.
-const PORT = process.env.PORT; 
+
+/**
+ * PRECAUTION: Cloud Run provides the PORT environment variable.
+ * Your app MUST listen on this port to pass the health check.
+ */
+const PORT = process.env.PORT || 8080; 
 
 app.use(cors());
 app.use(bodyParser.json());
 
-// Configuration object for BigQuery
-let bqConfig = {
-  projectId: 'elevate360-poc'
-};
+// Initialize BigQuery with ADC (No physical keys.json path needed)
+const bigquery = new BigQuery({ projectId: 'elevate360-poc' });
 
+// --- API ROUTES ---
+app.get('/api/sdr-by-specialization', async (req, res) => {
+  // Your existing BigQuery logic...
+});
+
+app.get('/api/escalation-rate', async (req, res) => {
+  // Your existing BigQuery logic...
+});
+
+// --- FRONTEND INTEGRATION ---
 /**
- * STRATEGY: Use Environment variable for credentials.
- * This avoids keeping a physical keys.json file in the src folder.
+ * Serve the built Angular files from the dist folder.
+ * Based on your angular.json, the path is 'dist/sitexx/browser'.
  */
-if (process.env.GCP_CREDENTIALS_BASE64) {
-  try {
-    const decodedKey = Buffer.from(process.env.GCP_CREDENTIALS_BASE64, 'base64').toString();
-    bqConfig.credentials = JSON.parse(decodedKey);
-    console.log('BigQuery initialized using Environment Variable.');
-  } catch (err) {
-    console.error('Failed to parse GCP_CREDENTIALS_BASE64:', err);
-  }
-}
+app.use(express.static(path.join(__dirname, 'dist/sitexx/browser')));
 
-const bigquery = new BigQuery(bqConfig);
+// Essential for Angular Routing: redirect all non-API requests to index.html
+app.get('/*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist/sitexx/browser/index.html'));
+});
 
-// ... (Your existing endpoints: /api/sdr-by-specialization and /api/escalation-rate)
-
-// CRITICAL: Bind to 0.0.0.0 to ensure the container is reachable by the Cloud Run health check
+// CRITICAL: Bind to 0.0.0.0 to ensure reachability from outside the container
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Backend server started successfully on port ${PORT}`);
+  console.log(`Server successfully started and listening on port ${PORT}`);
 });
