@@ -4,102 +4,36 @@ const cors = require('cors');
 const { BigQuery } = require('@google-cloud/bigquery');
 
 const app = express();
-
-/**
- * Cloud Run assigns a port via the PORT environment variable (usually 8080).
- * Your application MUST listen on this port to pass the health check.
- */
+// Cloud Run injects the PORT. We must use it or default to 8080.
 const PORT = process.env.PORT || 8080; 
 
 app.use(cors());
 app.use(bodyParser.json());
 
-/**
- * Initialize BigQuery without 'keyFilename'.
- * When running on Cloud Run, the library automatically uses the identity 
- * of the service account assigned to the service.
- */
-const bigquery = new BigQuery({
+// Configuration object for BigQuery
+let bqConfig = {
   projectId: 'elevate360-poc'
-});
+};
 
-app.get('/api/sdr-by-specialization', async (req, res) => {
-  const { startDate, endDate, businessLine, site } = req.query;
-  let filters = [
-    "string_field_18 = 'TRUE'",
-    "PARSE_DATE('%m/%d/%Y', string_field_4) BETWEEN @startDate AND @endDate"
-  ];
-  const params = { startDate, endDate };
-
-  if (site && site !== 'Select') {
-    filters.push("TRIM(string_field_14) = @site");
-    params.site = site.trim();
-  }
-  if (businessLine && businessLine !== 'Select') {
-    filters.push("string_field_5 = @businessLine");
-    params.businessLine = businessLine.trim();
-  }
-
-  const whereClause = filters.join(' AND ');
-  const query = `
-    SELECT
-      string_field_10 AS specialization,
-      COUNT(*) AS sdr_count 
-    FROM
-      \`elevate360-poc.hyd_core_data.core-metrics\`
-    WHERE
-      ${whereClause}
-    GROUP BY 
-      string_field_10
-    ORDER BY
-      sdr_count DESC
-  `;
+/**
+ * STRATEGY: Use Environment variable for credentials.
+ * This avoids keeping a physical keys.json file in the src folder.
+ */
+if (process.env.GCP_CREDENTIALS_BASE64) {
   try {
-    const [rows] = await bigquery.query({ query, params });
-    res.json(rows);
+    const decodedKey = Buffer.from(process.env.GCP_CREDENTIALS_BASE64, 'base64').toString();
+    bqConfig.credentials = JSON.parse(decodedKey);
+    console.log('BigQuery initialized using Environment Variable.');
   } catch (err) {
-    console.error('BigQuery Error:', err);
-    res.status(500).send('Query Failed');
+    console.error('Failed to parse GCP_CREDENTIALS_BASE64:', err);
   }
-});
+}
 
-app.get('/api/escalation-rate', async (req, res) => {
-  const { startDate, endDate, businessLine, site } = req.query;
-  let filters = [
-    "string_field_18 = 'TRUE'",
-    "PARSE_DATE('%m/%d/%Y', string_field_4) BETWEEN @startDate AND @endDate"
-  ];
-  const params = { startDate, endDate };
+const bigquery = new BigQuery(bqConfig);
 
-  if (site && site !== 'Select') {
-    filters.push("TRIM(string_field_14) = @site");
-    params.site = site.trim();
-  }
-  if (businessLine && businessLine !== 'Select') {
-    filters.push("string_field_5 = @businessLine");
-    params.businessLine = businessLine.trim();
-  }
+// ... (Your existing endpoints: /api/sdr-by-specialization and /api/escalation-rate)
 
-  const whereClause = filters.join(' AND ');
-  const query = `
-    SELECT
-      COUNTIF(string_field_19 = 'TRUE') AS total_escalation,
-      COUNT(*) AS total_closed_volume,
-      SAFE_DIVIDE(COUNTIF(string_field_19 = 'TRUE'), COUNT(*)) AS escalation_rate
-    FROM
-      \`elevate360-poc.hyd_core_data.core-metrics\`
-    WHERE
-      ${whereClause}
-  `;
-  try {
-    const [rows] = await bigquery.query({ query, params });
-    res.json(rows[0]);
-  } catch (err) {
-    console.error('BigQuery Error:', err);
-    res.status(500).send('Query Failed');
-  }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server is successfully listening on port ${PORT}`);
+// CRITICAL: Bind to 0.0.0.0 to ensure the container is reachable by the Cloud Run health check
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Backend server started successfully on port ${PORT}`);
 });
