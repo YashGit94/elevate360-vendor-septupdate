@@ -46,3 +46,6 @@ steps:
 images:
   - 'gcr.io/$PROJECT_ID/dashboard-frontend'
   - 'gcr.io/$PROJECT_ID/dashboard-backend'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
