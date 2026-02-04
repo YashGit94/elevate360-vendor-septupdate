@@ -1,6 +1,23 @@
-# Inside cloudbuild.yaml, update the deploy steps:
+steps:
+  # --- 1. BACKEND SERVICE ---
+  # Build the Backend Image using backend.Dockerfile
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Backend'
+    args: [
+      'build', 
+      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest', 
+      '-f', 'backend.Dockerfile', 
+      '.'
+    ]
+
+  # Push Backend Image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Backend'
+    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest']
+
+  # Deploy Backend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'deploy-backend'
+    id: 'Deploy Backend'
     entrypoint: gcloud
     args:
       - 'run'
@@ -12,10 +29,27 @@
       - '$_REGION'
       - '--port'
       - '8080'
-      - '--no-allow-unauthenticated' # Use this instead
+      - '--no-allow-unauthenticated' # Set to --allow-unauthenticated if Org Policy permits
 
+  # --- 2. FRONTEND SERVICE ---
+  # Build the Frontend Image using standard Dockerfile
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Frontend'
+    args: [
+      'build', 
+      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest', 
+      '-f', 'Dockerfile', 
+      '.'
+    ]
+
+  # Push Frontend Image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Frontend'
+    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest']
+
+  # Deploy Frontend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'deploy-frontend'
+    id: 'Deploy Frontend'
     entrypoint: gcloud
     args:
       - 'run'
@@ -27,4 +61,11 @@
       - '$_REGION'
       - '--port'
       - '80'
-      - '--no-allow-unauthenticated' # Use this instead
+      - '--no-allow-unauthenticated' # Set to --allow-unauthenticated if Org Policy permits
+
+substitutions:
+  _REGION: us-central1
+  _REPO_NAME: my-repository # Ensure this matches your Artifact Registry repo name
+
+options:
+  logging: CLOUD_LOGGING_ONLY
