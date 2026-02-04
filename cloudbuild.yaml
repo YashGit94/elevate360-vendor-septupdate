@@ -50,7 +50,6 @@ steps:
       - '--region'
       - '$_REGION'
       - '--port'
-      - '80'
       - '--timeout'
       - '300s' # Cloud Run Request Timeout
       - '--no-allow-unauthenticated'
