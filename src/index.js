@@ -3,20 +3,18 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { BigQuery } = require('@google-cloud/bigquery');
 
-const SCOPES = [
-  'https://www.googleapis.com/auth/bigquery',
-  'https://www.googleapis.com/auth/drive.readonly'
-];
+// Scopes are automatically handled by the Cloud Run service account roles
 const app = express();
-const PORT = 3001;
+// Cloud Run provides the port via the PORT environment variable
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(bodyParser.json());
 
+// Initialize BigQuery without keyFilename to use Application Default Credentials (ADC)
+// This works automatically when deployed to Google Cloud
 const bigquery = new BigQuery({
-  keyFilename: './src/keys.json',
-  projectId: 'elevate360-poc',
-  scopes: SCOPES,
+  projectId: 'elevate360-poc'
 });
 
 app.get('/api/sdr-by-specialization', async (req, res) => {
@@ -26,6 +24,7 @@ app.get('/api/sdr-by-specialization', async (req, res) => {
     "PARSE_DATE('%m/%d/%Y', string_field_4) BETWEEN @startDate AND @endDate"
   ];
   const params = { startDate, endDate };
+  
   if (site && site !== 'Select') {
     filters.push("TRIM(string_field_14) = @site");
     params.site = site.trim();
@@ -34,6 +33,7 @@ app.get('/api/sdr-by-specialization', async (req, res) => {
     filters.push("string_field_5 = @businessLine");
     params.businessLine = businessLine.trim();
   }
+  
   const whereClause = filters.join(' AND ');
   const query = `
     SELECT
@@ -64,6 +64,7 @@ app.get('/api/escalation-rate', async (req, res) => {
     "PARSE_DATE('%m/%d/%Y', string_field_4) BETWEEN @startDate AND @endDate"
   ];
   const params = { startDate, endDate };
+  
   if (site && site !== 'Select') {
     filters.push("TRIM(string_field_14) = @site");
     params.site = site.trim();
@@ -72,6 +73,7 @@ app.get('/api/escalation-rate', async (req, res) => {
     filters.push("string_field_5 = @businessLine");
     params.businessLine = businessLine.trim();
   }
+  
   const whereClause = filters.join(' AND ');
   const query = `
     SELECT
@@ -93,5 +95,5 @@ app.get('/api/escalation-rate', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
