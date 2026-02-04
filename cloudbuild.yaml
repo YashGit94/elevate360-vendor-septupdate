@@ -1,19 +1,19 @@
 steps:
-  # Step 1: Build Backend Image using Docker.backend
+  # Step 1: Build Backend Image
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA',
-      '-f', 'Docker.backend',
+      '-f', 'Dockerfile.backend',
       '.'
     ]
 
-  # Step 2: Build Frontend Image using Docker.frontend
+  # Step 2: Build Frontend Image
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/frontend:$COMMIT_SHA',
-      '-f', 'Docker.frontend',
+      '-f', 'Dockerfile.frontend',
       '.'
     ]
 
@@ -34,7 +34,7 @@ steps:
       - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA'
       - '--region=${_REGION}'
       - '--platform=managed'
-      - '--port=8080' # Matches the default PORT env var and your code fallback
+      - '--port=8080'
       - '--no-allow-unauthenticated'
 
   # Step 5: Deploy Frontend to Cloud Run
