@@ -1,44 +1,56 @@
 steps:
-  # Step 1: Install dependencies for both Frontend and Backend
-  - name: 'node:20'
-    entrypoint: 'npm'
-    args: ['install']
-
-  # Step 2: Build the Angular Frontend
-  # Based on angular.json, the project name is 'sitexx'
-  - name: 'node:20'
-    entrypoint: 'npx'
-    args: ['ng', 'build', '--configuration=production']
-
-  # Step 3: Build the Docker image
+  # --- BACKEND IMAGE ---
   - name: 'gcr.io/cloud-builders/docker'
     args: [
-      'build', 
-      '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/sitexx-app:$COMMIT_SHA', 
+      'build',
+      '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA',
+      '-f', 'backend.Dockerfile', # Name of your backend Dockerfile
       '.'
     ]
 
-  # Step 4: Push the image to Artifact Registry
+  # --- FRONTEND IMAGE ---
   - name: 'gcr.io/cloud-builders/docker'
     args: [
-      'push', 
-      '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/sitexx-app:$COMMIT_SHA'
+      'build',
+      '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/frontend:$COMMIT_SHA',
+      '-f', 'frontend.Dockerfile', # Name of your frontend Dockerfile
+      '.'
     ]
 
-  # Step 5: Deploy to Cloud Run
+  # --- PUSH IMAGES ---
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA']
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/frontend:$COMMIT_SHA']
+
+  # --- DEPLOY BACKEND ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
-      - 'sitexx-service'
-      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/sitexx-app:$COMMIT_SHA'
+      - 'backend-service'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--no-allow-unauthenticated' # Secure backend
+
+  # --- DEPLOY FRONTEND ---
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'frontend-service'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/frontend:$COMMIT_SHA'
       - '--region=${_REGION}'
       - '--platform=managed'
       - '--allow-unauthenticated'
 
 images:
-  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/sitexx-app:$COMMIT_SHA'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/frontend:$COMMIT_SHA'
 
 substitutions:
   _REGION: us-central1
