@@ -4,14 +4,15 @@ const cors = require('cors');
 const { BigQuery } = require('@google-cloud/bigquery');
 
 const app = express();
-// Cloud Run assigns a port via the PORT environment variable. 8080 is the default.
+
+// Cloud Run provides the port via the PORT environment variable. 
+// It MUST listen on this variable to pass health checks.
 const PORT = process.env.PORT || 8080; 
 
 app.use(cors());
 app.use(bodyParser.json());
 
 // Initializing without keyFilename uses Application Default Credentials (ADC)
-// Ensure your Cloud Run Service Account has 'BigQuery Data Viewer' and 'BigQuery Job User' roles.
 const bigquery = new BigQuery({
   projectId: 'elevate360-poc'
 });
@@ -90,5 +91,5 @@ app.get('/api/escalation-rate', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running and listening on port ${PORT}`);
 });
