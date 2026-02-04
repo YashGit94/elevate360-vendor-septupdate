@@ -9,7 +9,7 @@ const SCOPES = [
 ];
 const app = express();
 // const PORT = 3001;
-const PORT = process.env.PORT || 8887;
+const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
