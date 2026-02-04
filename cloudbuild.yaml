@@ -1,65 +1,49 @@
 steps:
-  # 1. Install & Build Frontend
+  # Step 1: Install dependencies for both Frontend and Backend
   - name: 'node:20'
     entrypoint: 'npm'
     args: ['install']
-  
+
+  # Step 2: Build the Angular Frontend
+  # Based on angular.json, output is dist/sitexx
   - name: 'node:20'
-    entrypoint: 'npm'
-    args: ['run', 'build']
+    entrypoint: 'npx'
+    args: ['ng', 'build', '--configuration=production']
 
-  # 2. Build Docker Images
+  # Step 3: Build the Docker image
+  # Replace [REGION] and [REPOSITORY] with your actual GCP values
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/frontend', '-f', 'Dockerfile.frontend', '.']
+    args: [
+      'build', 
+      '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/sitexx-app:$COMMIT_SHA', 
+      '.'
+    ]
 
+  # Step 4: Push the image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/backend', '-f', 'Dockerfile.backend', '.']
+    args: [
+      'push', 
+      '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/sitexx-app:$COMMIT_SHA'
+    ]
 
-  # 3. Push Images
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/frontend']
-  
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/backend']
-
-  # 4. Deploy Backend to Cloud Run (Port 3001 as required by src/index.js)
+  # Step 5: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
-      - 'elevate360-backend'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/backend'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-      - '--port'
-      - '3001'
-      - '--allow-unauthenticated'
-
-  # 5. Deploy Frontend to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'elevate360-frontend'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/frontend'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
+      - 'sitexx-service'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/sitexx-app:$COMMIT_SHA'
+      - '--region=${_REGION}'
+      - '--platform=managed'
       - '--allow-unauthenticated'
 
 images:
-  - 'gcr.io/$PROJECT_ID/frontend'
-  - 'gcr.io/$PROJECT_ID/backend'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/sitexx-app:$COMMIT_SHA'
 
-# This section fixes the service account / logs error
+substitutions:
+  _REGION: us-central1
+  _REPOSITORY: my-repo
+
 options:
   logging: CLOUD_LOGGING_ONLY
-
-timeout: '1200s'
