@@ -3,5 +3,6 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm install --only=production
 COPY src/index.js ./src/index.js
+# No COPY for keys.json
 EXPOSE 8080
 CMD ["node", "src/index.js"]
