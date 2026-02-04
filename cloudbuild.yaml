@@ -1,19 +1,19 @@
 steps:
-  # --- DEPLOY CONSOLIDATED SERVICE ---
+  # --- DEPLOY ALL-IN-ONE SERVICE ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'Deploy All-in-One'
+    id: 'Deploy Unified Service'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'elevate360-service'
       - '--source'
-      - '.' # Builds from the current root directory
+      - '.' # Build from the current directory
       - '--region'
       - 'us-central1'
       - '--no-allow-unauthenticated'
       - '--timeout'
-      - '600s'
+      - '600s' # Extended timeout for the initial build
 
 options:
   logging: CLOUD_LOGGING_ONLY
