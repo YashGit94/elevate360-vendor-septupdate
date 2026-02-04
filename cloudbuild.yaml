@@ -12,7 +12,7 @@ steps:
     args: [
       'build',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA',
-      '-f', 'Dockerfile.backend',
+      '-f', 'backend.Dockerfile',
       '.'
     ]
 
@@ -21,11 +21,11 @@ steps:
     args: [
       'build',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/frontend:$COMMIT_SHA',
-      '-f', 'Dockerfile.frontend',
+      '-f', 'frontend.Dockerfile',
       '.'
     ]
 
-  # Step 4: Push Images to Artifact Registry
+  # Step 4: Push Images
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA']
   
@@ -42,6 +42,7 @@ steps:
       - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA'
       - '--region=${_REGION}'
       - '--platform=managed'
+      - '--port=8080' # Explicitly tell Cloud Run to use 8080
       - '--no-allow-unauthenticated'
 
   # Step 6: Deploy Frontend to Cloud Run
@@ -56,13 +57,9 @@ steps:
       - '--platform=managed'
       - '--allow-unauthenticated'
 
-images:
-  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA'
-  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/frontend:$COMMIT_SHA'
-
 substitutions:
   _REGION: us-central1
-  _REPOSITORY: sitexx-repo  # <--- MUST MATCH YOUR ARTIFACT REGISTRY REPO NAME
+  _REPOSITORY: sitexx-repo 
 
 options:
   logging: CLOUD_LOGGING_ONLY
