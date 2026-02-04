@@ -1,21 +1,55 @@
 steps:
-  # 1. Install dependencies using the lockfile
-  - name: 'node:20'
-    entrypoint: npm
-    args: ['install']
+  # --- BACKEND SERVICE ---
+  # 1. Build Backend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest', '-f', 'backend.Dockerfile', '.']
 
-  # 2. Build the Angular application for production
-  # This uses the 'build' script defined in your package.json
-  - name: 'node:20'
-    entrypoint: npm
-    args: ['run', 'build']
+  # 2. Push Backend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest']
 
-# Note: Substitutions and artifacts are optional. 
-# Remove the artifacts block entirely if you do not have a Cloud Storage bucket ready.
-# artifacts:
-#   objects:
-#     location: 'gs://REPLACE_WITH_ACTUAL_BUCKET_NAME/build-artifacts/'
-#     paths: ['dist/sitexx/**']
+  # 3. Deploy Backend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'backend-service'
+      - '--image'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest'
+      - '--region'
+      - '$_REGION'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+  # --- FRONTEND SERVICE ---
+  # 4. Build Frontend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest', '-f', 'Dockerfile', '.']
+
+  # 5. Push Frontend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest']
+
+  # 6. Deploy Frontend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'frontend-service'
+      - '--image'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest'
+      - '--region'
+      - '$_REGION'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+substitutions:
+  _REGION: us-central1
+  _REPO_NAME: my-app-repo # Replace with your actual Artifact Registry repository name
 
 options:
   logging: CLOUD_LOGGING_ONLY
