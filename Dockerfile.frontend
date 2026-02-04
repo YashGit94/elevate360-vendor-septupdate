@@ -1,14 +1,22 @@
-# Stage 1: Build Angular
-FROM node:20 AS build
+# Stage 1: Build
+FROM node:20-alpine AS build
 WORKDIR /app
+
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
+
+# Copy source code and build the application
 COPY . .
-RUN npx ng build --configuration=production
+# The output directory 'dist/sitexx' is defined in angular.json
+RUN npx ng build --configuration production
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
-# Path matches dist/sitexx from angular.json
-COPY --from=build /app/dist/sitexx /usr/share/nginx/html
+# Copy the custom nginx configuration if needed, or use default
+# Note: In Angular 19, the default output path is dist/sitexx/browser
+COPY --from=build /app/dist/sitexx/browser /usr/share/nginx/html
+
+# Cloud Run listens on port 8080 by default, but Nginx uses 80
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
