@@ -1,13 +1,4 @@
-steps:
-  # --- 1. BUILD & DEPLOY BACKEND ---
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'build-backend'
-    args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest', '-f', 'backend.Dockerfile', '.']
-
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'push-backend'
-    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest']
-
+# Inside cloudbuild.yaml, update the deploy steps:
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-backend'
     entrypoint: gcloud
@@ -21,16 +12,7 @@ steps:
       - '$_REGION'
       - '--port'
       - '8080'
-      - '--allow-unauthenticated'
-
-  # --- 2. BUILD & DEPLOY FRONTEND ---
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'build-frontend'
-    args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest', '-f', 'Dockerfile', '.']
-
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'push-frontend'
-    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest']
+      - '--no-allow-unauthenticated' # Use this instead
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-frontend'
@@ -45,11 +27,4 @@ steps:
       - '$_REGION'
       - '--port'
       - '80'
-      - '--allow-unauthenticated'
-
-substitutions:
-  _REGION: us-central1
-  _REPO_NAME: my-repository
-
-options:
-  logging: CLOUD_LOGGING_ONLY
+      - '--no-allow-unauthenticated' # Use this instead
