@@ -4,14 +4,21 @@ const cors = require('cors');
 const { BigQuery } = require('@google-cloud/bigquery');
 
 const app = express();
-// Cloud Run injects the PORT environment variable. Listening to it is mandatory.
+
+/**
+ * Cloud Run assigns a port via the PORT environment variable (usually 8080).
+ * Your application MUST listen on this port to pass the health check.
+ */
 const PORT = process.env.PORT || 8080; 
 
 app.use(cors());
 app.use(bodyParser.json());
 
-// Initialize BigQuery with ONLY the project ID. 
-// It will use Application Default Credentials (ADC) from the Service Account.
+/**
+ * Initialize BigQuery without 'keyFilename'.
+ * When running on Cloud Run, the library automatically uses the identity 
+ * of the service account assigned to the service.
+ */
 const bigquery = new BigQuery({
   projectId: 'elevate360-poc'
 });
@@ -23,6 +30,7 @@ app.get('/api/sdr-by-specialization', async (req, res) => {
     "PARSE_DATE('%m/%d/%Y', string_field_4) BETWEEN @startDate AND @endDate"
   ];
   const params = { startDate, endDate };
+
   if (site && site !== 'Select') {
     filters.push("TRIM(string_field_14) = @site");
     params.site = site.trim();
@@ -31,6 +39,7 @@ app.get('/api/sdr-by-specialization', async (req, res) => {
     filters.push("string_field_5 = @businessLine");
     params.businessLine = businessLine.trim();
   }
+
   const whereClause = filters.join(' AND ');
   const query = `
     SELECT
@@ -61,6 +70,7 @@ app.get('/api/escalation-rate', async (req, res) => {
     "PARSE_DATE('%m/%d/%Y', string_field_4) BETWEEN @startDate AND @endDate"
   ];
   const params = { startDate, endDate };
+
   if (site && site !== 'Select') {
     filters.push("TRIM(string_field_14) = @site");
     params.site = site.trim();
@@ -69,6 +79,7 @@ app.get('/api/escalation-rate', async (req, res) => {
     filters.push("string_field_5 = @businessLine");
     params.businessLine = businessLine.trim();
   }
+
   const whereClause = filters.join(' AND ');
   const query = `
     SELECT
@@ -90,5 +101,5 @@ app.get('/api/escalation-rate', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server successfully started on port ${PORT}`);
+  console.log(`Server is successfully listening on port ${PORT}`);
 });
