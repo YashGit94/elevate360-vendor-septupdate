@@ -1,30 +1,38 @@
 steps:
-  # --- BACKEND IMAGE ---
+  # Step 1: Install and Build Frontend (Angular)
+  - name: 'node:20'
+    entrypoint: 'npm'
+    args: ['install']
+  - name: 'node:20'
+    entrypoint: 'npx'
+    args: ['ng', 'build', '--configuration=production']
+
+  # Step 2: Build Backend Image
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA',
-      '-f', 'Dockerfile.backend', # Name of your backend Dockerfile
+      '-f', 'Dockerfile.backend',
       '.'
     ]
 
-  # --- FRONTEND IMAGE ---
+  # Step 3: Build Frontend Image
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/frontend:$COMMIT_SHA',
-      '-f', 'Dockerfile.frontend', # Name of your frontend Dockerfile
+      '-f', 'Dockerfile.frontend',
       '.'
     ]
 
-  # --- PUSH IMAGES ---
+  # Step 4: Push Images to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA']
   
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/frontend:$COMMIT_SHA']
 
-  # --- DEPLOY BACKEND ---
+  # Step 5: Deploy Backend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -34,9 +42,9 @@ steps:
       - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA'
       - '--region=${_REGION}'
       - '--platform=managed'
-      - '--no-allow-unauthenticated' # Secure backend
+      - '--no-allow-unauthenticated'
 
-  # --- DEPLOY FRONTEND ---
+  # Step 6: Deploy Frontend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -54,7 +62,7 @@ images:
 
 substitutions:
   _REGION: us-central1
-  _REPOSITORY: your-repo-name
+  _REPOSITORY: sitexx-repo  # <--- MUST MATCH YOUR ARTIFACT REGISTRY REPO NAME
 
 options:
   logging: CLOUD_LOGGING_ONLY
