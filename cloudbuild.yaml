@@ -1,19 +1,19 @@
 steps:
-  # --- DEPLOY UNIFIED SERVICE ---
+  # --- DEPLOY CONSOLIDATED SERVICE ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'Deploy Service'
+    id: 'Deploy Unified Service'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'elevate360-service'
       - '--source'
-      - '.'
+      - '.' 
       - '--region'
       - 'us-central1'
       - '--no-allow-unauthenticated'
       - '--timeout'
-      - '900s' # Increased to 15 minutes for Angular compilation
+      - '900s' # Extended to 15 minutes for frontend compilation
 
 options:
   logging: CLOUD_LOGGING_ONLY
