@@ -1,23 +1,12 @@
 steps:
-  # --- 1. BACKEND SERVICE ---
-  # Build the Backend Image using backend.Dockerfile
+  # 1. Build and Push Backend
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Backend'
-    args: [
-      'build', 
-      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest', 
-      '-f', 'backend.Dockerfile', 
-      '.'
-    ]
-
-  # Push Backend Image to Artifact Registry
+    args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest', '-f', 'backend.Dockerfile', '.']
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push Backend'
     args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest']
 
-  # Deploy Backend to Cloud Run
+  # 2. Deploy Backend (Restricted)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'Deploy Backend'
     entrypoint: gcloud
     args:
       - 'run'
@@ -29,27 +18,16 @@ steps:
       - '$_REGION'
       - '--port'
       - '8080'
-      - '--no-allow-unauthenticated' # Set to --allow-unauthenticated if Org Policy permits
+      - '--no-allow-unauthenticated' # Compliance fix
 
-  # --- 2. FRONTEND SERVICE ---
-  # Build the Frontend Image using standard Dockerfile
+  # 3. Build and Push Frontend
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Frontend'
-    args: [
-      'build', 
-      '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest', 
-      '-f', 'Dockerfile', 
-      '.'
-    ]
-
-  # Push Frontend Image to Artifact Registry
+    args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest', '-f', 'Dockerfile', '.']
   - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push Frontend'
     args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest']
 
-  # Deploy Frontend to Cloud Run
+  # 4. Deploy Frontend (Restricted)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'Deploy Frontend'
     entrypoint: gcloud
     args:
       - 'run'
@@ -61,11 +39,11 @@ steps:
       - '$_REGION'
       - '--port'
       - '80'
-      - '--no-allow-unauthenticated' # Set to --allow-unauthenticated if Org Policy permits
+      - '--no-allow-unauthenticated' # Compliance fix
 
 substitutions:
   _REGION: us-central1
-  _REPO_NAME: my-repository # Ensure this matches your Artifact Registry repo name
+  _REPO_NAME: my-repository
 
 options:
   logging: CLOUD_LOGGING_ONLY
