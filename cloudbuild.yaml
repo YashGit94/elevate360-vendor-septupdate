@@ -1,65 +1,19 @@
 steps:
-  # --- 1. BUILD & PUSH BACKEND ---
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Backend'
-    args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest', '-f', 'backend.Dockerfile', '.']
-
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push Backend'
-    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest']
-
-  # --- 2. DEPLOY BACKEND WITH TIMEOUTS ---
+  # --- DEPLOY CONSOLIDATED SERVICE ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'Deploy Backend'
+    id: 'Deploy All-in-One'
     entrypoint: gcloud
-    timeout: '600s' # Cloud Build Step Timeout: Waits 10 mins for deployment to finish
     args:
       - 'run'
       - 'deploy'
-      - 'backend-service'
-      - '--image'
-      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest'
+      - 'elevate360-service'
+      - '--source'
+      - '.' # Builds from the current root directory
       - '--region'
-      - '$_REGION'
-      - '--port'
-      - '8080'
-      - '--timeout'
-      - '300s' # Cloud Run Request Timeout: Extends health check window
+      - 'us-central1'
       - '--no-allow-unauthenticated'
-
-  # --- 3. BUILD & PUSH FRONTEND ---
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Build Frontend'
-    args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest', '-f', 'Dockerfile', '.']
-
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'Push Frontend'
-    args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest']
-
-  # --- 4. DEPLOY FRONTEND WITH TIMEOUTS ---
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'Deploy Frontend'
-    entrypoint: gcloud
-    timeout: '600s' # Cloud Build Step Timeout
-    args:
-      - 'run'
-      - 'deploy'
-      - 'frontend-service'
-      - '--image'
-      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest'
-      - '--region'
-      - '$_REGION'
-      - '--port'
       - '--timeout'
-      - '300s' # Cloud Run Request Timeout
-      - '--no-allow-unauthenticated'
-
-# Global build timeout (Optional)
-timeout: '1200s'
-
-substitutions:
-  _REGION: us-central1
-  _REPO_NAME: my-repository
+      - '600s'
 
 options:
   logging: CLOUD_LOGGING_ONLY
