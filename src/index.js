@@ -3,16 +3,15 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { BigQuery } = require('@google-cloud/bigquery');
 
-// Scopes are automatically handled by the Cloud Run service account roles
 const app = express();
-// Cloud Run provides the port via the PORT environment variable
-const PORT = process.env.PORT || 3001;
+// Cloud Run assigns a port via the PORT environment variable. 8080 is the default.
+const PORT = process.env.PORT || 8080; 
 
 app.use(cors());
 app.use(bodyParser.json());
 
-// Initialize BigQuery without keyFilename to use Application Default Credentials (ADC)
-// This works automatically when deployed to Google Cloud
+// Initializing without keyFilename uses Application Default Credentials (ADC)
+// Ensure your Cloud Run Service Account has 'BigQuery Data Viewer' and 'BigQuery Job User' roles.
 const bigquery = new BigQuery({
   projectId: 'elevate360-poc'
 });
@@ -24,7 +23,6 @@ app.get('/api/sdr-by-specialization', async (req, res) => {
     "PARSE_DATE('%m/%d/%Y', string_field_4) BETWEEN @startDate AND @endDate"
   ];
   const params = { startDate, endDate };
-  
   if (site && site !== 'Select') {
     filters.push("TRIM(string_field_14) = @site");
     params.site = site.trim();
@@ -33,7 +31,6 @@ app.get('/api/sdr-by-specialization', async (req, res) => {
     filters.push("string_field_5 = @businessLine");
     params.businessLine = businessLine.trim();
   }
-  
   const whereClause = filters.join(' AND ');
   const query = `
     SELECT
@@ -64,7 +61,6 @@ app.get('/api/escalation-rate', async (req, res) => {
     "PARSE_DATE('%m/%d/%Y', string_field_4) BETWEEN @startDate AND @endDate"
   ];
   const params = { startDate, endDate };
-  
   if (site && site !== 'Select') {
     filters.push("TRIM(string_field_14) = @site");
     params.site = site.trim();
@@ -73,7 +69,6 @@ app.get('/api/escalation-rate', async (req, res) => {
     filters.push("string_field_5 = @businessLine");
     params.businessLine = businessLine.trim();
   }
-  
   const whereClause = filters.join(' AND ');
   const query = `
     SELECT
