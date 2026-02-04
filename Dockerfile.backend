@@ -3,7 +3,5 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --omit=dev
 COPY src/ ./src
-# Ensure index.js is configured for ADC and doesn't look for keys.json
-ENV PORT=3001
-EXPOSE 3001
+# The CMD will now pick up the dynamic PORT from the updated index.js
 CMD [ "node", "src/index.js" ]
