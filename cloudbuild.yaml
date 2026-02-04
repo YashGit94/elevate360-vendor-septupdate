@@ -1,13 +1,18 @@
 steps:
-  # 1. Build and Push Backend
+  # --- 1. BUILD & PUSH BACKEND ---
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Backend'
     args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest', '-f', 'backend.Dockerfile', '.']
+
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Backend'
     args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/backend:latest']
 
-  # 2. Deploy Backend (Restricted)
+  # --- 2. DEPLOY BACKEND WITH TIMEOUTS ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy Backend'
     entrypoint: gcloud
+    timeout: '600s' # Cloud Build Step Timeout: Waits 10 mins for deployment to finish
     args:
       - 'run'
       - 'deploy'
@@ -18,17 +23,24 @@ steps:
       - '$_REGION'
       - '--port'
       - '8080'
-      - '--no-allow-unauthenticated' # Compliance fix
+      - '--timeout'
+      - '300s' # Cloud Run Request Timeout: Extends health check window
+      - '--no-allow-unauthenticated'
 
-  # 3. Build and Push Frontend
+  # --- 3. BUILD & PUSH FRONTEND ---
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Frontend'
     args: ['build', '-t', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest', '-f', 'Dockerfile', '.']
+
   - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Frontend'
     args: ['push', '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/frontend:latest']
 
-  # 4. Deploy Frontend (Restricted)
+  # --- 4. DEPLOY FRONTEND WITH TIMEOUTS ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy Frontend'
     entrypoint: gcloud
+    timeout: '600s' # Cloud Build Step Timeout
     args:
       - 'run'
       - 'deploy'
@@ -39,7 +51,12 @@ steps:
       - '$_REGION'
       - '--port'
       - '80'
-      - '--no-allow-unauthenticated' # Compliance fix
+      - '--timeout'
+      - '300s' # Cloud Run Request Timeout
+      - '--no-allow-unauthenticated'
+
+# Global build timeout (Optional)
+timeout: '1200s'
 
 substitutions:
   _REGION: us-central1
