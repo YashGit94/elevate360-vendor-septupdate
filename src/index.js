@@ -6,8 +6,7 @@ const { BigQuery } = require('@google-cloud/bigquery');
 
 const app = express();
 
-/**
- * PRECAUTION: Cloud Run provides the PORT environment variable.
+/** * PRECAUTION: Cloud Run provides the PORT environment variable.
  * Your app MUST listen on this port to pass the health check.
  */
 const PORT = process.env.PORT || 8080; 
@@ -15,7 +14,7 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Initialize BigQuery with ADC (Application Default Credentials)
+// Initialize BigQuery with ADC (No keys.json file required in code)
 const bigquery = new BigQuery({ projectId: 'elevate360-poc' });
 
 // --- API ROUTES ---
@@ -38,6 +37,25 @@ app.get('/api/sdr-by-specialization', async (req, res) => {
   }
 });
 
+app.get('/api/escalation-rate', async (req, res) => {
+  const { startDate, endDate, businessLine, site } = req.query;
+  let filters = ["string_field_18 = 'TRUE'", "PARSE_DATE('%m/%d/%Y', string_field_4) BETWEEN @startDate AND @endDate"];
+  const params = { startDate, endDate };
+  if (site && site !== 'Select') { filters.push("TRIM(string_field_14) = @site"); params.site = site.trim(); }
+  if (businessLine && businessLine !== 'Select') { filters.push("string_field_5 = @businessLine"); params.businessLine = businessLine.trim(); }
+
+  const query = `SELECT COUNTIF(string_field_19 = 'TRUE') AS total_escalation, COUNT(*) AS total_closed_volume, 
+                 SAFE_DIVIDE(COUNTIF(string_field_19 = 'TRUE'), COUNT(*)) AS escalation_rate 
+                 FROM \`elevate360-poc.hyd_core_data.core-metrics\` WHERE ${filters.join(' AND ')}`;
+  try {
+    const [rows] = await bigquery.query({ query, params });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('BigQuery Error:', err);
+    res.status(500).send('Query Failed');
+  }
+});
+
 // --- FRONTEND INTEGRATION ---
 /**
  * Serve the built Angular files from the dist folder.
@@ -52,5 +70,5 @@ app.get('/*', (req, res) => {
 
 // CRITICAL: Bind to 0.0.0.0 for external reachability
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Unified server started and listening on port ${PORT}`);
+  console.log(`Server successfully started and listening on port ${PORT}`);
 });
