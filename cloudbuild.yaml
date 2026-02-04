@@ -4,7 +4,7 @@ steps:
     args: [
       'build',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/backend:$COMMIT_SHA',
-      '-f', 'Docker.backend',
+      '-f', 'Dockerfile.backend',
       '.'
     ]
 
@@ -13,7 +13,7 @@ steps:
     args: [
       'build',
       '-t', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/frontend:$COMMIT_SHA',
-      '-f', 'Docker.frontend',
+      '-f', 'Dockerfile.frontend',
       '.'
     ]
 
