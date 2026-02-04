@@ -1,31 +1,21 @@
 steps:
-  # 1. Install dependencies
+  # 1. Install dependencies using the lockfile
   - name: 'node:20'
     entrypoint: npm
     args: ['install']
 
-  # 2. Run unit tests (Optional - set to allow failure if no Chrome environment exists)
-  # - name: 'node:20'
-  #   entrypoint: npm
-  #   args: ['test', '--', '--watch=false', '--browsers=ChromeHeadless']
-
-  # 3. Build the Angular application for production
+  # 2. Build the Angular application for production
+  # This uses the 'build' script defined in your package.json
   - name: 'node:20'
     entrypoint: npm
     args: ['run', 'build']
 
-  # 4. (Optional) Deploy to Firebase or App Engine
-  # Uncomment if you want to deploy automatically after a successful build
-  # - name: 'gcr.io/cloud-builders/firebase'
-  #   args: ['deploy']
-
-substitutions:
-  _REGION: us-central1
+# Note: Substitutions and artifacts are optional. 
+# Remove the artifacts block entirely if you do not have a Cloud Storage bucket ready.
+# artifacts:
+#   objects:
+#     location: 'gs://REPLACE_WITH_ACTUAL_BUCKET_NAME/build-artifacts/'
+#     paths: ['dist/sitexx/**']
 
 options:
   logging: CLOUD_LOGGING_ONLY
-
-artifacts:
-  objects:
-    location: 'gs://[YOUR_BUCKET_NAME]/build-artifacts/'
-    paths: ['dist/sitexx/**']
