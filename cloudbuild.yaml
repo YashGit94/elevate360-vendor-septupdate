@@ -1,19 +1,19 @@
 steps:
-  # --- DEPLOY ALL-IN-ONE SERVICE ---
+  # --- DEPLOY UNIFIED SERVICE ---
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'Deploy Unified Service'
+    id: 'Deploy Service'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'elevate360-service'
       - '--source'
-      - '.' # Build from the current directory
+      - '.'
       - '--region'
       - 'us-central1'
       - '--no-allow-unauthenticated'
       - '--timeout'
-      - '600s' # Extended timeout for the initial build
+      - '900s' # Increased to 15 minutes for Angular compilation
 
 options:
   logging: CLOUD_LOGGING_ONLY
