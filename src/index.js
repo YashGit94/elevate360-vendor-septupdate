@@ -15,16 +15,27 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Initialize BigQuery with ADC (No physical keys.json path needed)
+// Initialize BigQuery with ADC (Application Default Credentials)
 const bigquery = new BigQuery({ projectId: 'elevate360-poc' });
 
 // --- API ROUTES ---
 app.get('/api/sdr-by-specialization', async (req, res) => {
-  // Your existing BigQuery logic...
-});
+  const { startDate, endDate, businessLine, site } = req.query;
+  let filters = ["string_field_18 = 'TRUE'", "PARSE_DATE('%m/%d/%Y', string_field_4) BETWEEN @startDate AND @endDate"];
+  const params = { startDate, endDate };
+  if (site && site !== 'Select') { filters.push("TRIM(string_field_14) = @site"); params.site = site.trim(); }
+  if (businessLine && businessLine !== 'Select') { filters.push("string_field_5 = @businessLine"); params.businessLine = businessLine.trim(); }
 
-app.get('/api/escalation-rate', async (req, res) => {
-  // Your existing BigQuery logic...
+  const query = `SELECT string_field_10 AS specialization, COUNT(*) AS sdr_count 
+                 FROM \`elevate360-poc.hyd_core_data.core-metrics\` 
+                 WHERE ${filters.join(' AND ')} GROUP BY 1 ORDER BY 2 DESC`;
+  try {
+    const [rows] = await bigquery.query({ query, params });
+    res.json(rows);
+  } catch (err) {
+    console.error('BigQuery Error:', err);
+    res.status(500).send('Query Failed');
+  }
 });
 
 // --- FRONTEND INTEGRATION ---
@@ -39,7 +50,7 @@ app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist/sitexx/browser/index.html'));
 });
 
-// CRITICAL: Bind to 0.0.0.0 to ensure reachability from outside the container
+// CRITICAL: Bind to 0.0.0.0 for external reachability
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server successfully started and listening on port ${PORT}`);
+  console.log(`Unified server started and listening on port ${PORT}`);
 });
