@@ -5,7 +5,7 @@ const { BigQuery } = require('@google-cloud/bigquery');
 
 const app = express();
 // Cloud Run injects the PORT. We must use it or default to 8080.
-const PORT = process.env.PORT || 8080; 
+const PORT = process.env.PORT; 
 
 app.use(cors());
 app.use(bodyParser.json());
