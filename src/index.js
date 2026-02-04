@@ -7,16 +7,18 @@ const SCOPES = [
   'https://www.googleapis.com/auth/bigquery',
   'https://www.googleapis.com/auth/drive.readonly'
 ];
+
 const app = express();
-// const PORT = 3001;
-const PORT = process.env.PORT || 3001;
+
+// Use the PORT environment variable assigned by Cloud Run, or 3001 for local testing
+const PORT = process.env.PORT || 3001; 
+
 app.use(cors());
 app.use(bodyParser.json());
 
+// Initialize BigQuery without keyFilename to use Application Default Credentials (ADC)
 const bigquery = new BigQuery({
-  keyFilename: './src/keys.json',
-  projectId: 'elevate360-poc',
-  scopes: SCOPES,
+  projectId: 'elevate360-poc'
 });
 
 app.get('/api/sdr-by-specialization', async (req, res) => {
@@ -92,6 +94,7 @@ app.get('/api/escalation-rate', async (req, res) => {
   }
 });
 
+// IMPORTANT: Listen on '0.0.0.0' to ensure Cloud Run can probe the container
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
