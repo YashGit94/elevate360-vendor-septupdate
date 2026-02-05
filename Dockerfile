@@ -16,7 +16,6 @@ RUN npm install --only=production
 
 # Copy backend source code and BigQuery keys
 COPY src/index.js ./src/
-COPY src/keys.json ./src/
 
 # Copy built Angular files to the backend's public directory
 # The path dist/sitexx is defined in your angular.json
