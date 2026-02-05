@@ -10,21 +10,20 @@ RUN npm run build -- --configuration production
 FROM node:20-alpine
 WORKDIR /app
 
-# Copy backend dependencies and source
+# Install only production dependencies for the backend
 COPY package*.json ./
 RUN npm install --only=production
-COPY src/index.js ./src/
-# Ensure your BigQuery keys are included if not using IAM roles
-COPY src/keys.json ./src/ 
 
-# Copy built Angular files to be served by Express
-# Based on angular.json, the output path is dist/sitexx
+# Copy backend source code and BigQuery keys
+COPY src/index.js ./src/
+COPY src/keys.json ./src/
+
+# Copy built Angular files to the backend's public directory
+# The path dist/sitexx is defined in your angular.json
 COPY --from=build /app/dist/sitexx ./public
 
-# Set Cloud Run environment variables
+# Set Cloud Run defaults
 ENV PORT=8080
-ENV NODE_ENV=production
-
 EXPOSE 8080
 
 CMD ["node", "src/index.js"]
