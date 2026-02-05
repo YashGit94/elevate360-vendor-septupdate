@@ -14,8 +14,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const bigquery = new BigQuery({
-  keyFilename: './src/keys.json',
-  projectId: 'elevate360-poc',
+  projectId: 'elevate360-poc', // Project ID is still recommended
   scopes: SCOPES,
 });
 
